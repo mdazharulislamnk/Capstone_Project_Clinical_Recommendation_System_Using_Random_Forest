@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Symptom Suggestions</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 15px;
+      margin: 5px;
+      background-color: #007bff;
+      color: #fff;
+      text-align: center;
+      font-size: 16px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    .results {
+      margin-top: 20px;
+    }
+
+    .results h3 {
+      margin-bottom: 10px;
+    }
+
+    .results table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .results table th,
+    .results table td {
+      padding: 10px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+
+    .results table th {
+      background-color: #f8f8f8;
+    }
+
+    .symptom-list {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+    }
+
+    .symptom-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px;
+      background-color: #e9ecef;
+      border-radius: 5px;
+      margin-bottom: 5px;
+    }
+
+    .remove-btn {
+      background-color: red;
+      color: white;
+      border: none;
+      padding: 3px 8px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .remove-btn:hover {
+      background-color: darkred;
+    }
+	
+	.delete-btn {
+  background-color: red;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.delete-btn:hover {
+  background-color: darkred;
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Symptom Suggestions</h1>
+    <form id="symptom-form">
+      <div class="form-group">
+        <label for="symptom-input">Enter Symptoms:</label>
+        <input type="text" id="symptom-input" placeholder="e.g. Running Nose, Fever">
+      </div>
+      <button type="button" class="btn" onclick="addSymptom()">Add Symptom</button>
+      <button type="button" class="btn" onclick="fetchAllRecommendations()">Get Suggestions</button>
+    </form>
+
+    <div class="symptom-list">
+      <h3>Selected Symptoms:</h3>
+      <ul id="symptom-list"></ul>
+    </div>
+	
+<div class="results" id="results">
+  <h3>Recommendations:</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Symptoms</th>
+        <th>Tests</th>
+        <th>Medicines</th>
+        <th>Dosages</th>
+        <th>Suggestions</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Recommendations will be inserted here -->
+    </tbody>
+  </table>
+</div>
+
+<!-- Preview & Generate PDF Button -->
+<button class="btn" onclick="generatePDF()">Preview PDF</button>
+
+<!-- Preview Section (Hidden Initially) -->
+<div id="preview-container" style="display: none; margin-top: 20px; padding: 15px; border: 1px solid #ccc; background: #f9f9f9;">
+  <h2>Preview</h2>
+  <div id="preview-content"></div>
+  <button onclick="downloadPDF()">Download PDF</button>
+</div>
+
+<!-- Include jsPDF Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+
+
+
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  
+  
+  <script>
+  
+  
+  
+let symptoms = [];
+
+function addSymptom() {
+  const symptomInput = document.getElementById('symptom-input');
+  const symptomValue = symptomInput.value.trim();
+  
+  if (symptomValue && !symptoms.includes(symptomValue)) {
+    symptoms.push(symptomValue);
+    updateSymptomList();
+  }
+
+  symptomInput.value = ''; // Clear input field
+}
+
+function updateSymptomList() {
+  const symptomList = document.getElementById('symptom-list');
+  symptomList.innerHTML = ''; // Clear previous list
+  
+  symptoms.forEach((symptom, index) => {
+    const listItem = document.createElement('li');
+    listItem.classList.add("symptom-item");
+    listItem.innerHTML = `${symptom} <button class="remove-btn" onclick="removeSymptom(${index})">X</button>`;
+    symptomList.appendChild(listItem);
+  });
+}
+
+function removeSymptom(index) {
+  symptoms.splice(index, 1);
+  updateSymptomList();
+}
+
+async function fetchAllRecommendations() {
+  if (symptoms.length === 0) {
+    alert('Please add at least one symptom.');
+    return;
+  }
+
+  const tableBody = document.querySelector('#results table tbody');
+  tableBody.innerHTML = ''; // Clear previous results
+
+  for (const symptom of symptoms) {
+    try {
+      const response = await axios.post('http://127.0.0.1:5000/predict', { symptom: symptom });
+      const recommendation = response.data;
+      updateRecommendationsTable(symptom, recommendation); // Pass the symptom
+    } catch (error) {
+      console.error(`Error fetching recommendation for ${symptom}:`, error);
+    }
+  }
+}
+
+function updateRecommendationsTable(symptom, recommendation = {}) {
+  const tableBody = document.querySelector("#results table tbody");
+
+  let existingRow = document.querySelector("#recommendation-row");
+
+  if (!existingRow) {
+    // Create a new row if it doesn't exist
+    const row = document.createElement("tr");
+    row.id = "recommendation-row";
+    row.innerHTML = `
+      <td id="symptoms-cell">${symptom}</td>
+      <td id="tests-cell">
+        <div id="tests-recommendations"></div>
+        <button onclick="addNewRecommendation('tests-cell', 'tests-recommendations')">Add new</button>
+      </td>
+      <td id="medicines-cell">
+        <div id="medicines-recommendations"></div>
+        <button onclick="addNewRecommendation('medicines-cell', 'medicines-recommendations')">Add new</button>
+      </td>
+      <td id="dosages-cell">
+        <div id="dosages-recommendations"></div>
+        <button onclick="addNewRecommendation('dosages-cell', 'dosages-recommendations')">Add new</button>
+      </td>
+      <td id="suggestions-cell">
+        <div id="suggestions-recommendations"></div>
+        <button onclick="addNewRecommendation('suggestions-cell', 'suggestions-recommendations')">Add new</button>
+      </td>
+      <td>
+        <button class="delete-btn" onclick="clearAllRecommendations()">Clear All</button>
+      </td>
+    `;
+    tableBody.appendChild(row);
+  } else {
+    // Append new symptoms to the existing row
+    appendToCell("symptoms-cell", symptom);
+  }
+
+  // Ensure recommendations are displayed properly
+  appendToCell("tests-recommendations", formatRecommendation(recommendation.Tests));
+  appendToCell("medicines-recommendations", formatRecommendation(recommendation.Medicines));
+  appendToCell("dosages-recommendations", formatRecommendation(recommendation.Dosages));
+  appendToCell("suggestions-recommendations", formatRecommendation(recommendation.Suggestions));
+}
+
+// Function to append new data into a table cell
+function appendToCell(cellId, newValue) {
+  let cell = document.getElementById(cellId);
+  if (newValue && newValue !== "N/A") {
+    cell.innerHTML += cell.innerHTML ? `<br> ${newValue}` : newValue;
+  }
+}
+
+// Function to format recommendations (ensures proper structure)
+function formatRecommendation(data) {
+  if (!data || data.length === 0) return "N/A";
+  if (Array.isArray(data)) return data.map(item => `<input type="checkbox"> ${item}`).join("<br>");
+  return `<input type="checkbox"> ${data}`;
+}
+
+// Function to add new recommendation to each cell in a new row below
+function addNewRecommendation(cellId, recommendationId) {
+  const newValue = prompt("Enter new recommendation text:");
+  if (newValue && newValue !== "N/A") {
+    const recommendationContainer = document.getElementById(recommendationId);
+    const newRow = document.createElement("div");
+    newRow.innerHTML = `<input type="checkbox"> ${newValue}<br>`;
+    recommendationContainer.appendChild(newRow);
+  }
+}
+
+// Function to clear all recommendations
+function clearAllRecommendations() {
+  document.querySelector("#recommendation-row").remove();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function generatePDF() {
+  const checkedBoxes = document.querySelectorAll('td input[type="checkbox"]:checked');
+
+  if (checkedBoxes.length === 0) {
+    alert("Please select at least one recommendation to generate the PDF.");
+    return;
+  }
+
+  let symptomsMap = new Map(); // Maps symptoms to their tests, medicines, dosages, and suggestions
+
+  // Get symptoms from the table rows
+  const rows = document.querySelectorAll("#results table tbody tr");
+  rows.forEach(row => {
+    let symptom = row.cells[0].textContent.trim(); // Get symptom name
+
+    // Initialize storage for this symptom
+    if (!symptomsMap.has(symptom)) {
+      symptomsMap.set(symptom, {
+        tests: new Set(),
+        medicines: [],
+        suggestions: new Set(),
+      });
+    }
+
+    let symptomData = symptomsMap.get(symptom);
+
+    // Get selected tests for the symptom
+    getCheckedValues(row, "tests-cell").forEach(t => symptomData.tests.add(t.value));
+
+    // Get selected medicines and their respective dosages
+    let selectedMedicines = getCheckedValues(row, "medicines-cell", true);
+    let selectedDosages = getCheckedValues(row, "dosages-cell", true);
+
+    // **Ensure correct row-wise mapping of medicines and dosages**
+    selectedMedicines.forEach((medicine, index) => {
+      let dosageText = "N/A"; // Default to "N/A" if not selected
+      if (selectedDosages.length > index) {
+        dosageText = selectedDosages[index].value; // Map the correct dosage to medicine
+      }
+      symptomData.medicines.push(`• ${medicine.value} - ${dosageText}`);
+    });
+
+    // Get selected suggestions
+    getCheckedValues(row, "suggestions-cell").forEach(s => symptomData.suggestions.add(s.value));
+  });
+
+  // **Construct PDF content properly per symptom**
+  let pdfContent = "";
+  symptomsMap.forEach((data, symptom) => {
+    pdfContent += `Symptoms & Tests\n`;
+    pdfContent += `Symptoms: ${symptom}\n`;
+    if (data.tests.size > 0) {
+      pdfContent += `Tests: ${Array.from(data.tests).join(", ")}\n`;
+    }
+
+    pdfContent += "\nPrescribed Medicines\n";
+    pdfContent += data.medicines.length > 0 ? data.medicines.join("\n") + "\n" : "N/A\n";
+
+    if (data.suggestions.size > 0) {
+      pdfContent += "\nFollow-up:\n";
+      pdfContent += `${Array.from(data.suggestions).join(", ")}\n`;
+    }
+
+    pdfContent += "------------------------------------------------------\n";
+  });
+
+  // Show the preview before generating the PDF
+  document.getElementById("preview-content").textContent = pdfContent;
+  document.getElementById("preview-container").style.display = "block";
+}
+
+// Function to get only checked values inside a given cell
+function getCheckedValues(row, cellId, withId = false) {
+  let cell = row.querySelector(`#${cellId}`);
+  if (!cell) return [];
+
+  let checkedInputs = cell.querySelectorAll('input[type="checkbox"]:checked');
+  return Array.from(checkedInputs).map(input => ({
+    id: input.getAttribute("data-medicine-id") || input.value, // Correct row-wise mapping
+    value: input.nextSibling ? input.nextSibling.textContent.trim() : "" // The displayed name
+  }));
+}
+
+function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  let content = document.getElementById("preview-content").textContent;
+  doc.text(content, 10, 10);
+
+  // Open the PDF in a new tab instead of downloading
+  window.open(doc.output("bloburl"), "_blank");
+}
+
+
+
+  </script>
+
+</body>
+</html>
