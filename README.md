@@ -58,9 +58,6 @@ This project is for academic and educational use only. Not intended for real-wor
 
 👤 Author
 Md. Azharul Islam
-BSc in CSE, East West University
-GitHub: mdazharulislamnk
-LinkedIn: mdazharulislam
 
 
 
