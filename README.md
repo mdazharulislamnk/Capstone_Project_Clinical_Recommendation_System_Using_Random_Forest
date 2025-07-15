@@ -52,15 +52,6 @@ multi_output_model.pkl – Random Forest multi-label classifier
 symptom_vectorizer.pkl – Vectorizer for symptom transformation
 
 
-🖥 Folder Structure
-.
-├── templates/                # HTML files (frontend)
-│   └── index.html
-├── app.py                   # Flask backend
-├── requirements.txt         # Required Python packages
-├── multi_output_model.pkl   # Trained ML model
-├── symptom_vectorizer.pkl   # Symptom vectorizer
-└── README.md                # Project documentation
 
 📄 License
 This project is for academic and educational use only. Not intended for real-world clinical diagnosis.
