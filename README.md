@@ -1,4 +1,4 @@
-# Capstone Project - Clinical Recommendation System Using Rando Forest
+# Capstone Project - Clinical Recommendation System Using Random Forest
 
 A full-stack machine learning web application that provides clinical recommendations (Tests, Medicines, Dosages, Suggestions) based on user-input symptoms. Built using Python, Flask, HTML, CSS, JavaScript, and trained with a Random Forest model.
 
